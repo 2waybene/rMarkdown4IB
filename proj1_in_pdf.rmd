@@ -1,0 +1,150 @@
+---
+title: 'This is a note for Golden Gate Association analysis'
+params:
+  brfStatus: breastfeeding
+  sesStatus: social-status
+  genStatus: gender
+  regStatus: region
+output: pdf_document
+
+  
+#c1 <- GSA.read.gmt(params$dbFile)
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>. A quick review on the markdown cheatsheet here <https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf>.
+
+
+This project is led by Ms. Jacqui Marzec. Our objectives are to find any significant association between SNPs (Golden Gate SNP candidate pool) in RSV positivie patients.
+
+## Association analysis on disease severity against GoldenGate SNP panels with several potentional covariates.
+
+In this analysis, we tried three different cases as following. Each setting will help to answer different hypothesis. The Analysis will be done with each case independently.
+
+
+
+```{r table-simple, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+suppressWarnings(require(pander))
+panderOptions('table.split.table', Inf)
+set.caption("Genotype case I")
+my.data <- "
+  Disease-level |   AA  |   AB    |   BB   
+  Severe        | SNPCnt| SNPCnt  | SNPCnt  
+  Mild          | SNPCnt| SNPCnt  | SNPCnt 
+  "
+df <- read.delim(textConnection(my.data),header=FALSE,sep="|",strip.white=TRUE,stringsAsFactors=FALSE)
+names(df) <- unname(as.list(df[1,])) # put headers on
+df <- df[-1,] # remove first row
+row.names(df)<-NULL
+pander(df, style = 'rmarkdown')
+
+panderOptions('table.split.table', Inf)
+set.caption("Genotype case II")
+my.data <- "
+  Disease-level |   AA  |   AB/BB    
+  Severe        | SNPCnt| SNPCnt    
+  Mild          | SNPCnt| SNPCnt   
+  "
+df <- read.delim(textConnection(my.data),header=FALSE,sep="|",strip.white=TRUE,stringsAsFactors=FALSE)
+names(df) <- unname(as.list(df[1,])) # put headers on
+df <- df[-1,] # remove first row
+row.names(df)<-NULL
+pander(df, style = 'rmarkdown')
+
+panderOptions('table.split.table', Inf)
+set.caption("Genotype case III")
+my.data <- "
+  Disease-level |   AA/AB |   BB       
+  Severe        | SNPCnt  | SNPCnt    
+  Mild          | SNPCnt  | SNPCnt   
+  "
+df <- read.delim(textConnection(my.data),header=FALSE,sep="|",strip.white=TRUE,stringsAsFactors=FALSE)
+names(df) <- unname(as.list(df[1,])) # put headers on
+df <- df[-1,] # remove first row
+row.names(df)<-NULL
+pander(df, style = 'rmarkdown')
+
+```
+
+
+## Analysis set up and load necessary functions
+
+```{r, message = FALSE, warning=FALSE}
+suppressWarnings(library(HardyWeinberg))
+suppressWarnings(library(XLConnect))
+source("helperScripts/analysisFuncs.R")
+```
+
+
+
+##Load up preprocessed data
+```{r, message=FALSE, warning=FALSE}
+
+##  Phenotype data
+dt <- read.table("data/RSV_cohort_data_ASCII.txt",header = TRUE, sep= "\t")
+
+##  ONLY use for RSV positive candidates
+row2use <- which (dt[,5] == 1)
+
+##  This is for reading Excel file
+##  We need to set memeory at 24 GB
+options(java.parameters = "-Xmx24g" )
+
+snpFiles <- "data/ASCII_genotype_data_GoldenGate_for_JYL_07122015.xlsx"
+
+##  There are five sheets of data
+sheets <- c (seq (1,5))
+
+```
+
+
+
+## Analysis results on disease severity -- logistic regression model
+```{r, message=FALSE, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60)} 
+sig.asso.SAT     <- c (list())
+results.logit <- logisticAnalysis (sig.asso.SAT, snpFiles, sheets, dt, 6, row2use)
+results.logit
+```
+
+## Analysis results on disease severity -- logistic with gender as covariate
+```{r, message=FALSE, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60)} 
+sig.asso.SAT     <- c (list())
+results.logit <- logisticAnalysisWCorrV (sig.asso.SAT, snpFiles, sheets, dt, 6, row2use, params$genStatus)
+results.logit
+```
+
+
+## Analysis results on disease severity -- logistic with region as covariate
+```{r, message=FALSE, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60)} 
+sig.asso.SAT     <- c (list())
+results.logit <- logisticAnalysisWCorrV (sig.asso.SAT, snpFiles, sheets, dt, 6, row2use, params$regStatus)
+results.logit
+```
+
+## Analysis results on disease severity -- logistic with social as covariate
+```{r, message=FALSE, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+sig.asso.SAT     <- c (list())
+results.logit <- logisticAnalysisWCorrV (sig.asso.SAT, snpFiles, sheets, dt, 6, row2use, params$sesStatus)
+results.logit
+```
+
+
+## Analysis results on disease severity -- logistic with breastfeeding as covariate
+```{r, message=FALSE, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60)} 
+sig.asso.SAT     <- c (list())
+results.logit <- logisticAnalysisWCorrV (sig.asso.SAT, snpFiles, sheets, dt, 6, row2use, params$brfStatus)
+results.logit
+```
+
+
+## Analysis results on disease severity -- chi-square test based model
+```{r, message=FALSE, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+sig.asso.SAT     <- c (list())
+results.chisqure <- AssoAnalysis     (sig.asso.SAT, snpFiles, sheets, dt, 6, row2use)
+results.chisqure
+```
