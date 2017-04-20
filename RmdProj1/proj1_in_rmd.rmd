@@ -1,0 +1,90 @@
+---
+title: 'This is a note for Golden Gate Association analysis'
+author: 'Jianying Li'
+date: 'April 6th, 2017'
+params:
+  corCol: covariate
+output:
+  html_document:
+    number_sections: true
+    toc: true
+    fig_width: 7
+    fig_height: 4.5
+    theme: readable
+    highlight: tango
+---
+
+# Introduction
+
+This project is led by Ms. Jacqui Marzec. Our objectives are to find any significant association between SNPs (Golden Gate SNP candidate pool) in RSV positivie patients.
+
+# GWAS on mitochondrial variants
+
+In this analysis, we tried three different cases as following. Each setting will help to answer different hypothesis. The Analysis will be done with each case independently.
+
+Case1, all three genotypes are kept: AA/AB/BB
+<br>
+Case2, two genotypes are kept: AA AB/BB
+<br>
+Case3, tow genotypes are kept: AA/AB BB
+<br>
+
+# Analysis set up
+## Set working direction and load necessary functions
+
+```{r, message = FALSE}
+#setwd("X:/project2016/GoldenGateProject/RmdProj1")
+library(HardyWeinberg)
+library(XLConnect)
+source("helperScripts/analysisFuncs.R")
+```
+
+
+
+##Load up preprocessed data
+```{r, message=FALSE, warning=FALSE}
+
+##  Phenotype data
+dt <- read.table("data/RSV_cohort_data_ASCII.txt",header = TRUE, sep= "\t")
+
+##  ONLY use for RSV positive candidates
+row2use <- which (dt[,5] == 1)
+
+##  This is for reading Excel file
+##  We need to set memeory at 24 GB
+options(java.parameters = "-Xmx24g" )
+
+snpFiles <- "data/ASCII_genotype_data_GoldenGate_for_JYL_07122015.xlsx"
+
+##  There are five sheets of data
+sheets <- c (seq (1,5))
+
+
+```
+
+#Analysis results on disease severity
+
+
+## Analysis results on disease severity -- chi-square test based model
+```{r, message=FALSE, warning=FALSE}
+sig.asso.SAT     <- c (list())
+results.chisqure <- AssoAnalysis     (sig.asso.SAT, snpFiles, sheets, dt, 6, row2use)
+results.chisqure
+```
+
+
+## Analysis results on disease severity -- logistic regression model
+```{r, message=FALSE, warning=FALSE}
+sig.asso.SAT     <- c (list())
+results.logit <- logisticAnalysis (sig.asso.SAT, snpFiles, sheets, dt, 6, row2use)
+results.logit
+```
+
+## Analysis results on disease severity -- logistic with gender as covariate
+```{r, message=FALSE, warning=FALSE}
+sig.asso.SAT     <- c (list())
+results.logit <- logisticAnalysisWCorrV (sig.asso.SAT, snpFiles, sheets, dt, 6, row2use, params$corCol)
+results.logit
+```
+
+
